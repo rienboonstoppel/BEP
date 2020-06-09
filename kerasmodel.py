@@ -1,4 +1,3 @@
-import csv
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -13,8 +12,10 @@ def get_f1(y_true, y_pred): #taken from old keras source code
     f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
     return f1_val
 
-dataset = np.loadtxt('dataset.txt')
-labels = np.loadtxt('labels.txt')
+dataset = np.loadtxt('C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\dataset.txt')
+labels = np.loadtxt('C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\labels.txt').astype(int)
+neg, pos = np.bincount(labels)
+ratio = neg/pos
 
 # Define Sequential model with 3 layers
 model = keras.Sequential(
@@ -28,7 +29,7 @@ model = keras.Sequential(
 model.summary()
 
 class_weight = {0: 1.,
-                1: 25.,
+                1: ratio,
                 }
 model.compile(
     loss = keras.losses.BinaryCrossentropy(
@@ -38,8 +39,10 @@ model.compile(
     metrics=[get_f1],
 )
 
-history = model.fit(dataset, labels, batch_size=32, epochs=100, class_weight=class_weight, validation_split=0.2)
+history = model.fit(dataset, labels, batch_size=16, epochs=10, class_weight=class_weight, validation_split=0.2)
 
 test_scores = model.evaluate(dataset, labels, verbose=2)
 print("Test loss:", test_scores[0])
 print("Test accuracy:", test_scores[1])
+
+model.save('model')
