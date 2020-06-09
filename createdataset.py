@@ -61,7 +61,6 @@ complete_dataset=np.array([])
 labels = []
 
 for i in range(10):
-    source = 'GNW'
     size = 50
     number = i + 1
     KOdata, WTdata, GSdata = openFiles(size,number)
