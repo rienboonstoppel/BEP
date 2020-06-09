@@ -12,8 +12,10 @@ def get_f1(y_true, y_pred): #taken from old keras source code
     f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
     return f1_val
 
-dataset = np.loadtxt('C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\dataset.txt')
-labels = np.loadtxt('C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\labels.txt').astype(int)
+path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
+name = 'GNW_50_10'
+dataset = np.loadtxt(path + name + '_data.txt')
+labels = np.loadtxt(path + name + '_labels.txt').astype(int)
 neg, pos = np.bincount(labels)
 ratio = neg/pos
 
