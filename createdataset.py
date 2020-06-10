@@ -104,7 +104,7 @@ def multipleExperiments(size,amount,source):
     return completeDataset, labels
 
 # DREAM_1_100_data,DREAM_1_100_labels = singleExperiment(100,1,'DREAM')
-GNW_50_10_data,GNW_50_10_labels = multipleExperiments(50,10,'GNW')
+GNW_100_5_data,GNW_100_5_labels = multipleExperiments(100,5,'GNW')
 
-np.savetxt('GNW_50_10_data.txt', GNW_50_10_data)
-np.savetxt('GNW_50_10_labels.txt', GNW_50_10_labels)
+np.savetxt('data\GNW_100_5_data.txt', GNW_100_5_data)
+np.savetxt('data\GNW_100_5_labels.txt', GNW_100_5_labels)

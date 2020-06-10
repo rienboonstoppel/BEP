@@ -53,5 +53,3 @@ print("Test loss:", test_scores[0])
 print("Test accuracy:", test_scores[1])
 
 model.save('model.h5')
-
-predicted_labels = model.predict(pred_dataset)
