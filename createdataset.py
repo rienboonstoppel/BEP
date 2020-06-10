@@ -47,7 +47,7 @@ def openFiles(size, number, source):
     '''load all data of one experiment, depending of source Gene Net Weaver or DREAMdata'''
     if source =='GNW':
         cur_path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\gnw-master'
-        new_path = cur_path + '\\10times50_1'
+        new_path = cur_path + '\\5times100'
         name = '\\Yeast-' + str(number) 
         KOpath = new_path + name + '_knockouts.tsv'
         WTpath = new_path + name + '_wildtype.tsv'
@@ -103,8 +103,8 @@ def multipleExperiments(size,amount,source):
     
     return completeDataset, labels
 
-# DREAM_1_100_data,DREAM_1_100_labels = singleExperiment(100,1,'DREAM')
-GNW_100_5_data,GNW_100_5_labels = multipleExperiments(100,5,'GNW')
+DREAM_1_100_data,DREAM_1_100_labels = singleExperiment(100,1,'DREAM')
+# GNW_100_5_data,GNW_100_5_labels = multipleExperiments(100,5,'GNW')
 
-np.savetxt('data\GNW_100_5_data.txt', GNW_100_5_data)
-np.savetxt('data\GNW_100_5_labels.txt', GNW_100_5_labels)
+np.savetxt('data\DREAM_1_100_data.txt', DREAM_1_100_data)
+np.savetxt('data\DREAM_1_100_labels.txt', DREAM_1_100_labels)
