@@ -19,4 +19,5 @@ pred_labels = np.loadtxt(pred_path + pred_name + '_labels.txt').astype(int)
 model = keras.models.load_model('model.h5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
 model.summary()
 
-predicted_labels = model.predict(pred_dataset)
+predicted_labels = model.predict_classes(pred_dataset)
+predicted_labels = predicted_labels.reshape([100,100])
