@@ -54,15 +54,15 @@ def openFiles(size, number, source, path):
 
 def dataPrep(KOdata, WTdata, size):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
-    dataset = np.array([])
+    dataset = []
     for j in range(len(KOdata)):
         for i in range(len(KOdata)):
-            dataset = np.append(dataset, KOdata[:,i])
-            dataset = np.append(dataset, KOdata[i,:])
-            dataset = np.append(dataset, KOdata[:,j])
-            dataset = np.append(dataset, KOdata[j,:])
-            dataset = np.append(dataset, WTdata[0,i])
-            dataset = np.append(dataset, WTdata[0,j])
+            dataset.extend(KOdata[:,i].tolist())
+            dataset.extend(KOdata[i,:].tolist())
+            dataset.extend(KOdata[:,j].tolist())
+            dataset.extend(KOdata[j,:].tolist())
+            dataset.append(WTdata[0,i].tolist())
+            dataset.append(WTdata[0,j].tolist())
             
     return dataset
 
@@ -85,7 +85,6 @@ def createDataset(size, number, amount, source, path):
     completeDataset = np.array([])
     allLabels = np.array([])
     for i in range(amount):
-        number = number + i
         print('Loading dataset: ' + str(number))
         start_time = time.time()
         KOdata, WTdata, GSdata = openFiles(size, number, source, path)
@@ -93,13 +92,14 @@ def createDataset(size, number, amount, source, path):
         labels = reshapeLabels(GSdata)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
-        print('Processing dataset: ' + str(number) + ' took %s seconds' % (time.time() - start_time))
+        print('Processing of dataset: ' + str(number) + ' took %s seconds' % (time.time() - start_time))
+        number += 1
 
     columns = 4 * size + 2
     rows = amount * size * size
     completeDataset = completeDataset.reshape([rows,columns])
        
-    name = source + '_' + str(number) + '_' + str(size) + '_'
+    name = source + '_' + str(amount) + '_' + str(size) + '_'
     np.savetxt('data\\' + name + 'data.txt', completeDataset)
     np.savetxt('data\\' + name + 'labels.txt', allLabels)
     return completeDataset, allLabels
