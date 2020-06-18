@@ -24,28 +24,18 @@ train_labels = np.loadtxt(train_path + train_name + '_labels.txt').astype(int)
 neg, pos = np.bincount(train_labels)
 ratio = neg/pos
 
-val_acc = []
-val_loss = []
+acc_per_fold = []
+loss_per_fold = []
 
 save_dir = '\\saved_models\\' 
-fold_var = 1
+fold_no = 1
 seed = 7
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+
 for train_index, val_index in skf.split(train_dataset, train_labels):
     
-    print('Fold: ' + fold_var)
+    print('Fold: ' + str(fold_no))
     
-    training_data = np.array([])
-    training_labels = np.array([])
-    validation_data = np.array([])
-    validations_labels = np.array([])
-    
-    for i in train_index:
-        training_data = np.append(training_data, train_dataset[i])
-        training_labels = np.append(training_labels, train_labels[i])
-    for i in train_index:
-        validation_data = np.append(training_data, train_dataset[i])
-        validation_labels = np.append(training_data, train_dataset[i])
 
     # Define Sequential model with 3 layers
     model = keras.Sequential(
@@ -70,32 +60,40 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     )
     
     # Create Callbacks
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(save_dir+get_model_name(fold_var),
-                                                 monitor='val_accuracy', 
-                                                 verbose=1, save_best_only=True, mode='max')
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(save_dir+get_model_name(fold_no),
+                                                  monitor=get_f1, 
+                                                  verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
-	# There can be other callbacks, but just showing one because it involves the model name
-	# This saves the best model
+ 	# There can be other callbacks, but just showing one because it involves the model name
+ 	# This saves the best model
 
-    history = model.fit(train_dataset, 
-                        train_labels, 
-                        batch_size = 8, 
+    history = model.fit(train_dataset[train_index], 
+                        train_labels[train_index], 
+                        batch_size = 4, 
                         epochs = 10, 
                         class_weight = class_weight, 
-                        validation_data = (validation_data, validation_labels),
+                        validation_data = (train_dataset[val_index], train_labels[val_index]),
                         callbacks = callbacks_list,)
     
-    # test_scores = model.evaluate(train_dataset, train_labels, verbose=2)
+    scores = model.evaluate(train_dataset, train_labels, verbose=2)
     # print("Test loss:", test_scores[0])
     # print("Test accuracy:", test_scores[1])
-  	# LOAD BEST MODEL to evaluate the performance of the model
 
-    model.load_weights("/saved_models/model_"+str(fold_var)+".h5")
-	
-    results = model.evaluate(validation_data, validation_labels, verboxe = 2)
-    results = dict(zip(model.metrics_names,results))
-	
-    val_acc.append(results['accuracy'])
-    val_loss.append(results['loss'])
-	
-    fold_var += 1
+    print(f'Score for fold {fold_no}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1]*100}%')
+    acc_per_fold.append(scores[1] * 100)
+    loss_per_fold.append(scores[0])
+
+    # Increase fold number
+    fold_no = fold_no + 1
+
+# == Provide average scores ==
+print('------------------------------------------------------------------------')
+print('Score per fold')
+for i in range(0, len(acc_per_fold)):
+  print('------------------------------------------------------------------------')
+  print(f'> Fold {i+1} - Loss: {loss_per_fold[i]} - Accuracy: {acc_per_fold[i]}%')
+print('------------------------------------------------------------------------')
+print('Average scores for all folds:')
+print(f'> Accuracy: {np.mean(acc_per_fold)} (+- {np.std(acc_per_fold)})')
+print(f'> Loss: {np.mean(loss_per_fold)}')
+print('------------------------------------------------------------------------')	
