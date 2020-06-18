@@ -30,7 +30,29 @@ def loadGSdata(file,size):
     
     return GSreshaped
 
-def dataPrep(KOdata,WTdata,size):
+def openFiles(size, number, source, path):
+    '''load all data of one experiment, depending of source Gene Net Weaver or DREAMdata'''
+    if source =='GNW':
+        new_path = path + '\\source_data\\GNW'
+        name = '\\Yeast-' + str(number) 
+        KOpath = new_path + name + '_knockouts.tsv'
+        WTpath = new_path + name + '_wildtype.tsv'
+        GSpath = new_path + name + '_goldstandard.tsv'
+
+    if source == 'DREAM':
+        new_path = path + '\\source_data\\DREAM4'
+        name = 'insilico_size' + str(size) + '_' + str(number)
+        KOpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_knockouts.tsv'
+        WTpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_wildtype.tsv'
+        GSpath = new_path + '\\size' + str(size) + '\\DREAM4goldstandards\\' + name + '_goldstandard.tsv'
+    
+    KOdata = loadData(KOpath)
+    WTdata = loadData(WTpath)
+    GSdata = loadGSdata(GSpath, size)
+    
+    return KOdata, WTdata, GSdata
+
+def dataPrep(KOdata, WTdata, size):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
     dataset = np.array([])
     for j in range(len(KOdata)):
@@ -41,70 +63,51 @@ def dataPrep(KOdata,WTdata,size):
             dataset = np.append(dataset, KOdata[j,:])
             dataset = np.append(dataset, WTdata[0,i])
             dataset = np.append(dataset, WTdata[0,j])
+            
     return dataset
 
-def openFiles(size, number, source):
-    '''load all data of one experiment, depending of source Gene Net Weaver or DREAMdata'''
-    if source =='GNW':
-        cur_path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\gnw-master'
-        new_path = cur_path + '\\5times100'
-        name = '\\Yeast-' + str(number) 
-        KOpath = new_path + name + '_knockouts.tsv'
-        WTpath = new_path + name + '_wildtype.tsv'
-        GSpath = new_path + name + '_goldstandard.tsv'
-
-    if source == 'DREAM':
-        cur_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\DREAMdata'
-        name = 'insilico_size' + str(size) + '_' + str(number)
-        KOpath = cur_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_knockouts.tsv'
-        WTpath = cur_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_wildtype.tsv'
-        GSpath = cur_path + '\\size' + str(size) + '\\DREAM4goldstandards\\' + name + '_goldstandard.tsv'
-    
-    KOdata = loadData(KOpath)
-    WTdata = loadData(WTpath)
-    GSdata = loadGSdata(GSpath, size)
-    
-    return KOdata, WTdata, GSdata
- 
-def singleExperiment(size, number,source):
-    KOdata, WTdata, GSdata = openFiles(size,number,source)
-    dataset = dataPrep(KOdata,WTdata,GSdata)
-    
+def reshapeLabels(GSdata):
+    '''create labels array from GSdata'''
     labels = []
-    for k in range(len(KOdata)):
-        for l in range(len(KOdata)):
+    for k in range(len(GSdata)):
+        for l in range(len(GSdata)):
             labels.append(GSdata[l,k])
-        
-    length = 4*size+2
-    dataset = dataset.reshape([size*size,length])
-    
-    return dataset, labels
+    return labels
 
-def multipleExperiments(size,amount,source):
-    completeDataset=np.array([])
-    labels = []
-   
-    start_time = time.time()
-    
+def createDataset(size, number, amount, source, path):
+    '''create datasets based on variables:
+            size = dimensions of the network
+            number = number of the network, when multiple networks are used, this is the starting number
+            amount = amount of networks to be added in dataset
+            source = GNW or DREAM
+            path = working directory
+    '''
+    completeDataset = np.array([])
+    allLabels = np.array([])
     for i in range(amount):
-        number = i + 1
-        KOdata, WTdata, GSdata = openFiles(size,number,source)
-        dataset = dataPrep(KOdata,WTdata,GSdata)
-        completeDataset =np.append(completeDataset,dataset)
-        for k in range(len(KOdata)):
-            for l in range(len(KOdata)):
-                labels.append(GSdata[l,k])
-        print("--- %s seconds ---" % (time.time() - start_time))
-        
-    length = 4*size+2
-    completeDataset = completeDataset.reshape([size*size*amount,length])
-    
-    print("--- %s seconds ---" % (time.time() - start_time))
-    
-    return completeDataset, labels
+        number = number + i
+        print('Loading dataset: ' + str(number))
+        start_time = time.time()
+        KOdata, WTdata, GSdata = openFiles(size, number, source, path)
+        dataset = dataPrep(KOdata, WTdata, size)
+        labels = reshapeLabels(GSdata)
+        completeDataset = np.append(completeDataset,dataset)
+        allLabels = np.append(allLabels,labels)
+        print('Processing dataset: ' + str(number) + ' took %s seconds' % (time.time() - start_time))
 
-DREAM_1_100_data,DREAM_1_100_labels = singleExperiment(100,1,'DREAM')
-# GNW_100_5_data,GNW_100_5_labels = multipleExperiments(100,5,'GNW')
+    columns = 4 * size + 2
+    rows = amount * size * size
+    completeDataset = completeDataset.reshape([rows,columns])
+       
+    name = source + '_' + str(number) + '_' + str(size) + '_'
+    np.savetxt('data\\' + name + 'data.txt', completeDataset)
+    np.savetxt('data\\' + name + 'labels.txt', allLabels)
+    return completeDataset, allLabels
 
-np.savetxt('data\DREAM_1_100_data.txt', DREAM_1_100_data)
-np.savetxt('data\DREAM_1_100_labels.txt', DREAM_1_100_labels)
+path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
+size = 100
+number = 1
+amount = 5
+source = 'GNW'
+
+completeDataset, allLabels = createDataset(size, number, amount, source, path)
