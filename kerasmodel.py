@@ -21,13 +21,13 @@ start_time = time.time()
 train_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
 train_name = 'GNW_10_100'
 print('Loading dataset ' + train_name + '...')
-train_dataset = np.loadtxt(train_path + train_name + '_data.txt')
-train_labels = np.loadtxt(train_path + train_name + '_labels.txt').astype(int)
+train_dataset = np.loadtxt(train_path + train_name + '_data-zscore.txt')
+train_labels = np.loadtxt(train_path + train_name + '_labels-zscore.txt').astype(int)
 print('... took %s seconds' % (time.time() - start_time))
 neg, pos = np.bincount(train_labels)
 ratio = neg/pos
 
-acc_per_fold = []
+f1_per_fold = []
 loss_per_fold = []
 
 save_dir = '\\saved_models\\' 
@@ -45,9 +45,10 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # Define Sequential model with 3 layers
     model = keras.Sequential(
         [
-            layers.Dense(12, input_shape = (len(train_dataset[0]), ), activation="relu", name="layer1"),
-            layers.Dense(8, activation="relu", name="layer2"),
-            layers.Dense(1, activation="relu", name="layer3"),
+            layers.Dense(len(train_dataset[0]), input_shape = (len(train_dataset[0]), ), activation="relu", name="layer1"),
+            layers.Dense(64, activation="relu", name="layer2"),
+            layers.Dense(32, activation="relu", name="layer3"),
+            layers.Dense(1, activation="relu", name="layer4")
         ]
     )
     
@@ -75,7 +76,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     history = model.fit(train_dataset[train_index], 
                         train_labels[train_index], 
                         batch_size = 32, 
-                        epochs = 20, 
+                        epochs = 5, 
                         class_weight = class_weight, 
                         validation_data = (train_dataset[val_index], train_labels[val_index]),
                         callbacks = callbacks_list,
@@ -86,7 +87,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # print("Test accuracy:", test_scores[1])
 
     print(f'Score for fold {fold_no}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1]*100}%')
-    acc_per_fold.append(scores[1] * 100)
+    f1_per_fold.append(scores[1] * 100)
     loss_per_fold.append(scores[0])
 
     # Increase fold number
@@ -95,11 +96,11 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
 # Average scores
 print('------------------------------------------------------------------------')
 print('Score per fold')
-for i in range(0, len(acc_per_fold)):
+for i in range(0, len(f1_per_fold)):
   print('------------------------------------------------------------------------')
-  print(f'> Fold {i+1} - Loss: {loss_per_fold[i]} - Accuracy: {acc_per_fold[i]}%')
+  print(f'> Fold {i+1} - Loss: {loss_per_fold[i]} - F1: {f1_per_fold[i]}%')
 print('------------------------------------------------------------------------')
 print('Average scores for all folds:')
-print(f'> Accuracy: {np.mean(acc_per_fold)} (+- {np.std(acc_per_fold)})')
+print(f'> F1: {np.mean(f1_per_fold)} (+- {np.std(f1_per_fold)})')
 print(f'> Loss: {np.mean(loss_per_fold)}')
 print('------------------------------------------------------------------------')	

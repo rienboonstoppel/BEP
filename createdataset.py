@@ -55,14 +55,35 @@ def openFiles(size, number, source, path):
 def dataPrep(KOdata, WTdata, size):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
     dataset = []
+    
+    # calculate element-wise Z-score
+
+    zscoreMatrix = []
+    # loop over columns
+
+    for i in range(len(KOdata)):
+        mean = np.mean(KOdata[:,i])
+        stdev = np.std(KOdata[:,i])
+        # loop over rows
+        for j in range(len(KOdata[:,i])):
+            dev = np.absolute(KOdata[j,i]-mean)
+            zscore = dev / stdev
+            zscoreMatrix.append(zscore)
+        
+    # reshape to original size and make numpy
+    zscoreMatrix = np.array(zscoreMatrix).reshape((len(KOdata),len(KOdata)))
+    # set diagonal to zero
+    for i in range(len(KOdata)):
+        zscoreMatrix[i,i] = 0
+    
     for j in range(len(KOdata)):
         for i in range(len(KOdata)):
-            dataset.extend(KOdata[:,i].tolist())
-            dataset.extend(KOdata[i,:].tolist())
-            dataset.extend(KOdata[:,j].tolist())
-            dataset.extend(KOdata[j,:].tolist())
-            dataset.append(WTdata[0,i].tolist())
-            dataset.append(WTdata[0,j].tolist())
+            dataset.extend(zscoreMatrix[:,i].tolist())
+            dataset.extend(zscoreMatrix[i,:].tolist())
+            dataset.extend(zscoreMatrix[:,j].tolist())
+            dataset.extend(zscoreMatrix[j,:].tolist())
+            # dataset.append(WTdata[0,i].tolist())
+            # dataset.append(WTdata[0,j].tolist())
             
     return dataset
 
@@ -94,13 +115,13 @@ def createDataset(size, number, amount, source, path):
         print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
         number += 1
 
-    columns = 4 * size + 2
+    columns = 4 * size # + 2
     rows = amount * size * size
     completeDataset = completeDataset.reshape([rows,columns])
     start_time = time.time()
     name = source + '_' + str(amount) + '_' + str(size) + '_'
-    np.savetxt('data\\' + name + 'data.txt', completeDataset)
-    np.savetxt('data\\' + name + 'labels.txt', allLabels)
+    np.savetxt('data\\' + name + 'data-zscore.txt', completeDataset)
+    np.savetxt('data\\' + name + 'labels-zscore.txt', allLabels)
     print('Writing complete dataset took %s seconds' % (time.time() - start_time))
 
     return completeDataset, allLabels
