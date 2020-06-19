@@ -13,11 +13,12 @@ def get_f1(y_true, y_pred):
 
 pred_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
 pred_name = 'DREAM_1_100'
-pred_dataset = np.loadtxt(pred_path + pred_name + '_data.txt')
-pred_labels = np.loadtxt(pred_path + pred_name + '_labels.txt').astype(int)
+pred_dataset = np.loadtxt(pred_path + pred_name + '_data-zscore.txt')
+pred_labels = np.loadtxt(pred_path + pred_name + '_labels-zscore.txt').astype(int)
 
-model = keras.models.load_model('model.h5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
+model = keras.models.load_model('model.hdf5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
 model.summary()
 
 predicted_labels = model.predict_classes(pred_dataset)
 predicted_labels = predicted_labels.reshape([100,100])
+print('Total predicted edges = ', str(predicted_labels.sum()))

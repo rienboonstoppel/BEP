@@ -129,7 +129,7 @@ def createDataset(size, number, amount, source, path):
 path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
 size = 100
 number = 1
-amount = 10
-source = 'GNW'
+amount = 1
+source = 'DREAM'
 
 completeDataset, allLabels = createDataset(size, number, amount, source, path)
