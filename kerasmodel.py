@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -16,11 +17,13 @@ def get_f1(y_true, y_pred):
 
 def get_model_name(k):
     return 'model_'+str(k)+'.h5'
-
+start_time = time.time()
 train_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
-train_name = 'GNW_100_5'
+train_name = 'GNW_10_100'
+print('Loading dataset ' + train_name + '...')
 train_dataset = np.loadtxt(train_path + train_name + '_data.txt')
 train_labels = np.loadtxt(train_path + train_name + '_labels.txt').astype(int)
+print('... took %s seconds' % (time.time() - start_time))
 neg, pos = np.bincount(train_labels)
 ratio = neg/pos
 
@@ -29,8 +32,10 @@ loss_per_fold = []
 
 save_dir = '\\saved_models\\' 
 fold_no = 1
-seed = 7
+seed = 10
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+
+model_save_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\saved_models\\'
 
 for train_index, val_index in skf.split(train_dataset, train_labels):
     
@@ -46,7 +51,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
         ]
     )
     
-    model.summary()
+    # model.summary()
     
     class_weight = {0: 1.,
                     1: ratio,
@@ -60,20 +65,21 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     )
     
     # Create Callbacks
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(save_dir+get_model_name(fold_no),
-                                                  monitor=get_f1, 
-                                                  verbose=1, save_best_only=True, mode='max')
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
+                                                  monitor='get_f1', 
+                                                  verbose=0, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
  	# There can be other callbacks, but just showing one because it involves the model name
  	# This saves the best model
 
     history = model.fit(train_dataset[train_index], 
                         train_labels[train_index], 
-                        batch_size = 4, 
-                        epochs = 10, 
+                        batch_size = 32, 
+                        epochs = 20, 
                         class_weight = class_weight, 
                         validation_data = (train_dataset[val_index], train_labels[val_index]),
-                        callbacks = callbacks_list,)
+                        callbacks = callbacks_list,
+                        verbose = 2)
     
     scores = model.evaluate(train_dataset, train_labels, verbose=2)
     # print("Test loss:", test_scores[0])
@@ -86,7 +92,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # Increase fold number
     fold_no = fold_no + 1
 
-# == Provide average scores ==
+# Average scores
 print('------------------------------------------------------------------------')
 print('Score per fold')
 for i in range(0, len(acc_per_fold)):

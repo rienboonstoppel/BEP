@@ -85,29 +85,30 @@ def createDataset(size, number, amount, source, path):
     completeDataset = np.array([])
     allLabels = np.array([])
     for i in range(amount):
-        print('Loading dataset: ' + str(number))
         start_time = time.time()
         KOdata, WTdata, GSdata = openFiles(size, number, source, path)
         dataset = dataPrep(KOdata, WTdata, size)
         labels = reshapeLabels(GSdata)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
-        print('Processing of dataset: ' + str(number) + ' took %s seconds' % (time.time() - start_time))
+        print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
         number += 1
 
     columns = 4 * size + 2
     rows = amount * size * size
     completeDataset = completeDataset.reshape([rows,columns])
-       
+    start_time = time.time()
     name = source + '_' + str(amount) + '_' + str(size) + '_'
     np.savetxt('data\\' + name + 'data.txt', completeDataset)
     np.savetxt('data\\' + name + 'labels.txt', allLabels)
+    print('Writing complete dataset took %s seconds' % (time.time() - start_time))
+
     return completeDataset, allLabels
 
 path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
 size = 100
 number = 1
-amount = 5
+amount = 10
 source = 'GNW'
 
 completeDataset, allLabels = createDataset(size, number, amount, source, path)
