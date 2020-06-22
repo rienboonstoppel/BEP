@@ -55,7 +55,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # model.summary()
     
     class_weight = {0: 1.,
-                    1: ratio,
+                    1: 1., #ratio
                     }
     model.compile(
         loss = keras.losses.BinaryCrossentropy(
