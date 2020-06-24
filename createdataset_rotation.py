@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-# import time
+import time
         
 def loadData(file):
     ''' load the KO and WT data of one experiment'''
@@ -48,15 +48,17 @@ def rotate(KOdata):
     for column in range(size):
         for row in range(size):
             KOrotated[row-column,column] = KOdata[row,column]
+            
+    KOrotated = np.transpose(KOrotated)
     return KOrotated
 
-def makeLabels(size):
-    labels = np.zeros(size).astype('int')
+def makeLabels(GSdata, size):
+    labels = np.zeros(size*size).astype('int')
     indices = range(1,size+1)
     indices_reverse = range(size, 0, -1)
     
     edges = []
-    for i in range(1):
+    for i in range(size):
         for j in range(size):
             source_node = indices[indices[j]-indices_reverse[i]]
             target_node = indices[j]
@@ -65,14 +67,46 @@ def makeLabels(size):
     for j in range(len(edges)):
         if edges[j] in GSdata:
             labels[j] = 1
+    labels = np.reshape(labels, (100,100))
     return labels
+
+def createDataset(size, number, amount, source, path):
+    '''create datasets based on variables:
+            size = dimensions of the network
+            number = number of the network, when multiple networks are used, this is the starting number
+            amount = amount of networks to be added in dataset
+            source = GNW or DREAM
+            path = working directory
+    '''
+    completeDataset = np.array([])
+    allLabels = np.array([])
+    for i in range(amount):
+        start_time = time.time()
+        KOdata, WTdata, GSdata = openFiles(size, number, source, path)
+        dataset = rotate(KOdata)
+        labels = makeLabels(GSdata, size)
+        completeDataset = np.append(completeDataset,dataset)
+        allLabels = np.append(allLabels,labels)
+        print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
+        number += 1
+
+    columns = size
+    rows = amount * size
+    completeDataset = completeDataset.reshape([rows,columns])
+    start_time = time.time()
+    name = source + '_' + str(amount) + '_' + str(size) + '_'
+    np.savetxt('data\\positions\\' + name + 'data-rotated.txt', completeDataset)
+    np.savetxt('data\\labels\\' + name + 'labels-rotated.txt', allLabels)
+    print('Writing complete dataset took %s seconds' % (time.time() - start_time))
+
+    return completeDataset, allLabels
 
 path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
 size = 100
 number = 1
-amount = 1
-source = 'DREAM'
-KOdata, WTdata, GSdata = openFiles(size, number, source, path)
-KOrotated = rotate(KOdata)
+amount = 10
+source = 'GNW'
 
-labels = makeLabels(size)
+completeDataset, allLabels= createDataset(size, number, amount, source, path)
+allLabels = np.reshape(allLabels, (size*amount, size))
+print('Total amount of edges = ' + str(np.sum(allLabels)))
