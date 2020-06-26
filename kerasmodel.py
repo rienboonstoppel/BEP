@@ -17,13 +17,22 @@ def get_f1(y_true, y_pred):
 
 def get_model_name(k):
     return 'model_'+str(k)+'.h5'
-start_time = time.time()
-train_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
+
+
+path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
 train_name = 'GNW_10_100'
-print('Loading dataset ' + train_name + '...')
-train_dataset = np.loadtxt(train_path + train_name + '_data-zscore.txt')
-train_labels = np.loadtxt(train_path + train_name + '_labels-zscore.txt').astype(int)
-print('... took %s seconds' % (time.time() - start_time))
+test_name = 'DREAM_1_100'
+start_time = time.time()
+print('Loading training dataset ' + train_name + '...')
+train_dataset = np.loadtxt(path + train_name + '_data-zscore.txt')
+train_labels = np.loadtxt(path + train_name + '_labels-zscore.txt').astype(int)
+time1 = time.time()
+print('... took %s seconds' % (time1 - start_time))
+print('Loading testing dataset ' + test_name + '...')
+test_dataset = np.loadtxt(path + test_name + '_data-zscore.txt')
+test_labels = np.loadtxt(path + test_name + '_labels-zscore.txt').astype(int)
+print('... took %s seconds' % (time.time() - time1))
+
 neg, pos = np.bincount(train_labels)
 ratio = neg/pos
 
@@ -32,7 +41,7 @@ loss_per_fold = []
 
 save_dir = '\\saved_models\\' 
 fold_no = 1
-seed = 10
+seed = 7
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
 model_save_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\saved_models\\'
@@ -45,28 +54,27 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # Define Sequential model with 3 layers
     model = keras.Sequential(
         [
-            layers.Dense(len(train_dataset[0]), input_shape = (len(train_dataset[0]), ), activation="relu", name="layer1"),
-            layers.Dense(64, activation="relu", name="layer2"),
-            layers.Dense(32, activation="relu", name="layer3"),
-            layers.Dense(1, activation="relu", name="layer4")
+            layers.Dense(64, input_shape = (len(train_dataset[0]), ), activation="relu", name="layer1"),
+            layers.Dense(32, activation="relu", name="layer2"),
+            layers.Dense(1, activation="relu", name="layer3"),
         ]
     )
     
     # model.summary()
     
     class_weight = {0: 1.,
-                    1: 1., #ratio
+                    1: ratio, #ratio
                     }
     model.compile(
         loss = keras.losses.BinaryCrossentropy(
             from_logits=True, label_smoothing=0, reduction="auto", name="binary_crossentropy"
             ),
-        optimizer = keras.optimizers.SGD(learning_rate=0.01),
+        optimizer = keras.optimizers.Adam(learning_rate=0.001),
         metrics = [get_f1],
     )
     
     # Create Callbacks
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'fold' + str(fold_no) + '-{epoch:02d}-{val_loss:.2f}.hdf5',
                                                   monitor='get_f1', 
                                                   verbose=0, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
@@ -75,14 +83,14 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
 
     history = model.fit(train_dataset[train_index], 
                         train_labels[train_index], 
-                        batch_size = 32, 
-                        epochs = 5, 
+                        batch_size = 64, 
+                        epochs = 25, 
                         class_weight = class_weight, 
                         validation_data = (train_dataset[val_index], train_labels[val_index]),
                         callbacks = callbacks_list,
                         verbose = 2)
     
-    scores = model.evaluate(train_dataset, train_labels, verbose=2)
+    scores = model.evaluate(test_dataset, test_labels, verbose=2)
     # print("Test loss:", test_scores[0])
     # print("Test accuracy:", test_scores[1])
 

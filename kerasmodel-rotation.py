@@ -1,6 +1,6 @@
 import time
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow.keras.backend as K
@@ -51,17 +51,17 @@ class_weight = {0: 1.,
                 }
 model.compile(
     loss = keras.losses.BinaryCrossentropy(
-        from_logits=True, label_smoothing=0, reduction="auto", name="binary_crossentropy"
+        #from_logits=True, label_smoothing=0, reduction="auto", name="binary_crossentropy"
         ),
-    optimizer = keras.optimizers.SGD(learning_rate=0.01),
+    optimizer = 'adam', # keras.optimizers.SGD(learning_rate=0.01),
     metrics = [get_f1],
 )
 
 # Create Callbacks
-checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
-                                              monitor='get_f1', 
-                                              verbose=0, save_best_only=True, mode='max')
-callbacks_list = [checkpoint]
+# checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
+#                                               monitor='get_f1', 
+#                                               verbose=0, save_best_only=True, mode='max')
+# callbacks_list = [checkpoint]
  	# There can be other callbacks, but just showing one because it involves the model name
  	# This saves the best model
 
@@ -71,7 +71,9 @@ history = model.fit(train_dataset,
                     epochs = 100, 
                     class_weight = class_weight, 
                     validation_split = 0.2,
-                    callbacks = callbacks_list,
+                    #callbacks = callbacks_list,
                     verbose = 2)
 
-scores = model.evaluate(train_dataset, train_labels, verbose=2)
+scores, accuracy = model.evaluate(train_dataset, train_labels, verbose=2)
+
+print('Accuracy: %.2f' % (accuracy*100))

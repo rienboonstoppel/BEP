@@ -26,7 +26,7 @@ def loadGSdata(file,size):
         x = int(GS[i][0])-1
         y = int(GS[i][1])-1
         edge = float(GS[i][2])
-        GSreshaped[y][x] = edge
+        GSreshaped[x][y] = edge
     
     return GSreshaped
 
@@ -85,7 +85,7 @@ def dataPrep(KOdata, WTdata, size):
             # dataset.append(WTdata[0,i].tolist())
             # dataset.append(WTdata[0,j].tolist())
             
-    return dataset
+    return dataset, zscoreMatrix
 
 def reshapeLabels(GSdata):
     '''create labels array from GSdata'''
@@ -108,7 +108,7 @@ def createDataset(size, number, amount, source, path):
     for i in range(amount):
         start_time = time.time()
         KOdata, WTdata, GSdata = openFiles(size, number, source, path)
-        dataset = dataPrep(KOdata, WTdata, size)
+        dataset, zscoreMatrix = dataPrep(KOdata, WTdata, size)
         labels = reshapeLabels(GSdata)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
@@ -124,7 +124,7 @@ def createDataset(size, number, amount, source, path):
     np.savetxt('data\\' + name + 'labels-zscore.txt', allLabels)
     print('Writing complete dataset took %s seconds' % (time.time() - start_time))
 
-    return completeDataset, allLabels
+    return completeDataset, allLabels, GSdata, zscoreMatrix
 
 path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
 size = 100
@@ -132,4 +132,5 @@ number = 1
 amount = 1
 source = 'DREAM'
 
-completeDataset, allLabels = createDataset(size, number, amount, source, path)
+completeDataset, allLabels, GSdata, zscoreMatrix = createDataset(size, number, amount, source, path)
+# allLabels = np. reshape(allLabels, (10000,3))
