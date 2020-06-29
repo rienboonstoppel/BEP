@@ -15,25 +15,23 @@ def get_f1(y_true, y_pred):
     f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
     return f1_val
 
-def get_model_name(k):
-    return 'model_'+str(k)+'.h5'
+def loadData(path, name):
+    print('Loading dataset ' + name + '...')
+    start_time = time.time()
+    dataset = np.loadtxt(path + name + '-data.txt')
+    labels = np.loadtxt(path + name + '-labels.txt').astype(int)
+    print('... took %s seconds' % (time.time() - start_time))
+    return dataset, labels
 
 
 path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
-train_name = 'GNW_10_100'
-test_name = 'DREAM_1_100'
-start_time = time.time()
-print('Loading training dataset ' + train_name + '...')
-train_dataset = np.loadtxt(path + train_name + '_data-zscore.txt')
-train_labels = np.loadtxt(path + train_name + '_labels-zscore.txt').astype(int)
-time1 = time.time()
-print('... took %s seconds' % (time1 - start_time))
-print('Loading testing dataset ' + test_name + '...')
-test_dataset = np.loadtxt(path + test_name + '_data-zscore.txt')
-test_labels = np.loadtxt(path + test_name + '_labels-zscore.txt').astype(int)
-print('... took %s seconds' % (time.time() - time1))
+train_name = 'GNW-greedy-nonoise_10_100_PD'
+test_name = 'DREAM_1_100_PD'
 
-neg, pos = np.bincount(train_labels)
+training = loadData(path, train_name)
+testing = loadData(path, test_name)
+
+neg, pos = np.bincount(training[1])
 ratio = neg/pos
 
 f1_per_fold = []
@@ -41,12 +39,12 @@ loss_per_fold = []
 
 save_dir = '\\saved_models\\' 
 fold_no = 1
-seed = 7
+seed = 10
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
 model_save_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\saved_models\\'
 
-for train_index, val_index in skf.split(train_dataset, train_labels):
+for train_index, val_index in skf.split(training[0], training[1]):
     
     print('Fold: ' + str(fold_no))
     
@@ -54,7 +52,7 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
     # Define Sequential model with 3 layers
     model = keras.Sequential(
         [
-            layers.Dense(64, input_shape = (len(train_dataset[0]), ), activation="relu", name="layer1"),
+            layers.Dense(64, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
             layers.Dense(32, activation="relu", name="layer2"),
             layers.Dense(1, activation="relu", name="layer3"),
         ]
@@ -81,16 +79,16 @@ for train_index, val_index in skf.split(train_dataset, train_labels):
  	# There can be other callbacks, but just showing one because it involves the model name
  	# This saves the best model
 
-    history = model.fit(train_dataset[train_index], 
-                        train_labels[train_index], 
+    history = model.fit(training[0][train_index], 
+                        training[1][train_index], 
                         batch_size = 64, 
                         epochs = 25, 
                         class_weight = class_weight, 
-                        validation_data = (train_dataset[val_index], train_labels[val_index]),
+                        validation_data = (training[0][val_index], training[1][val_index]),
                         callbacks = callbacks_list,
                         verbose = 2)
     
-    scores = model.evaluate(test_dataset, test_labels, verbose=2)
+    scores = model.evaluate(testing[0], testing[1], verbose=2)
     # print("Test loss:", test_scores[0])
     # print("Test accuracy:", test_scores[1])
 
