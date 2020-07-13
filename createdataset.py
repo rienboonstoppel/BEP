@@ -55,43 +55,50 @@ def openFiles(size, number, source, path):
     
     return KO, KD, WT, GS
 
-def dataPrep(KOdata, WTdata, size):
+def dataPrep(KO, KD, WT, GS):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
     dataset = []
-
-    Zko = np.absolute(stats.zscore(KOdata, axis = 0, ddof = 0))
-    PZko = 2 * (1 - stats.norm.cdf(Zko))
-    Prod = PZko # .* PZkd;
-    PD = np.zeros((size,size));
-    for i in range(size):
-        for j in range(size):
-            if Prod[i,j] > 0:
-                # CDF of product of two random variables uniformly distributed on the unit interval [0, 1]
-                PD[i,j] = Prod[i,j] * (1 - np.log(Prod[i,j])); 
-            else:
-                # % log(0) = inf
-                PD[i,j] = 0;
+    logKO = (np.ma.log(KO)).filled(0)
+    logKD = (np.ma.log(KD)).filled(0)
+    Zko = np.absolute(stats.zscore(logKO, axis = 0, ddof = 0))
+    Zkd = np.absolute(stats.zscore(logKD, axis = 0, ddof = 0))
+    Zko_nan_index = np.isnan(Zko)
+    Zkd_nan_index = np.isnan(Zkd)
+    Zko[Zko_nan_index] = 0
+    Zkd[Zkd_nan_index] = 0
+    # PZko = 2 * (1 - stats.norm.cdf(Zko))
+    # PZkd = 2 * (1 - stats.norm.cdf(Zkd))
+    Prod = np.maximum(Zko, Zkd)    # use mean or max 
+    # PD = np.zeros((size,size));
+    # for i in range(size):
+    #     for j in range(size):
+    #         if Prod[i,j] > 0:
+    #             # CDF of product of two random variables uniformly distributed on the unit interval [0, 1]
+    #             PD[i,j] = Prod[i,j] * (1 - np.log(Prod[i,j])); 
+    #         else:
+    #             # % log(0) = inf
+    #             PD[i,j] = 0;
 
     # set diagonal to zero
-    for i in range(len(KOdata)):
-        PD[i,i] = 1
+    for i in range(len(KO)):
+        Prod[i,i] = 0
     
-    for j in range(len(KOdata)):
-        for i in range(len(KOdata)):
-            dataset.extend(PD[:,i].tolist())
-            dataset.extend(PD[i,:].tolist())
-            dataset.extend(PD[:,j].tolist())
-            dataset.extend(PD[j,:].tolist())
+    for j in range(len(KO)):
+        for i in range(len(KO)):
+            dataset.extend(Prod[:,i].tolist())
+            dataset.extend(Prod[i,:].tolist())
+            dataset.extend(Prod[:,j].tolist())
+            dataset.extend(Prod[j,:].tolist())
             
-    return dataset
+    return dataset, KO, logKO, Zko, Prod
 
 def reshapeLabels(GS):
     '''create labels array from GS'''
     labels = []
-    for k in range(len(GS)):
-        for l in range(len(GS)):
-            labels.append(GS[l,k])
-    return labels
+    for l in range(len(GS)):
+        for k in range(len(GS)):
+            labels.append(GS[k,l])
+    return labels, GS
 
 def createDataset(size, number, amount, source, path, suffix):
     '''create dataset based on variables:
@@ -102,7 +109,7 @@ def createDataset(size, number, amount, source, path, suffix):
             path = working directory
     '''
     if source[0] == 'DREAM':
-        savename = 'data\\' + source[0] + '_' + str(amount) + '_' + str(size) + '_' + suffix
+        savename = 'data\\' + source[0] + '_' + str(number) + '_' + str(size) + '_' + suffix
     elif source[0] =='GNW':
         savename = 'data\\' + source[0] + '-' + source[1] + '-' + source[2] + '_' + str(amount) + '_' + str(size) + '_' + suffix
     completeDataset = np.array([])
@@ -110,8 +117,8 @@ def createDataset(size, number, amount, source, path, suffix):
     for i in range(amount):
         start_time = time.time()
         KO, KD, WT, GS = openFiles(size, number, source, path)
-        dataset = dataPrep(KO, WT, size)
-        labels = reshapeLabels(GS)
+        dataset, KO = dataPrep(KO, KD, WT, size)
+        labels, GS = reshapeLabels(GS)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
         print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
@@ -125,14 +132,19 @@ def createDataset(size, number, amount, source, path, suffix):
     np.savetxt(savename + '-labels.txt', allLabels)
     print('Writing complete dataset took %s seconds' % (time.time() - start_time))
 
-    return completeDataset, allLabels
+    return completeDataset, allLabels, GS, KO
 
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
 size = 100
 number = 1
 amount = 1
 source = ('DREAM', 'greedy', 'nonoise')
-suffix = 'PD'
+suffix = 'Zmax'
 
-completeDataset, allLabels = createDataset(size, number, amount, source, path, suffix)
+# output = createDataset(size, number, amount, source, path, suffix)
+
+KO, KD, WT, GS = openFiles(size, number, source, path)
+output = dataPrep(KO, KD, WT, size) # dataset, KO, logKO, Zko, Prod 
+
+# GS = output[2]
 # allLabels = np. reshape(allLabels, (10000,3))

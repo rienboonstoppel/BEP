@@ -25,8 +25,8 @@ def loadData(path, name):
 
 
 path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
-train_name = 'GNW-greedy-nonoise_10_100_PD'
-test_name = 'DREAM_1_100_PD'
+train_name = 'GNW-greedy-nonoise_10_100_Zmax'
+test_name = 'DREAM_1_100_Zmax'
 
 training = loadData(path, train_name)
 testing = loadData(path, test_name)
@@ -54,7 +54,7 @@ for train_index, val_index in skf.split(training[0], training[1]):
         [
             layers.Dense(64, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
             layers.Dense(32, activation="relu", name="layer2"),
-            layers.Dense(1, activation="relu", name="layer3"),
+            layers.Dense(1, activation="sigmoid", name="layer3"),
         ]
     )
     

@@ -32,11 +32,10 @@ def loadGSdata(file,size):
     
     return GSreshaped
 
-
 pred_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
 pred_name = 'DREAM_1_100'
-pred_dataset = np.loadtxt(pred_path + pred_name + '_data-zscore.txt')
-pred_labels = np.loadtxt(pred_path + pred_name + '_labels-zscore.txt').astype(int)
+pred_dataset = np.loadtxt(pred_path + pred_name + '_Zmax-data.txt')
+pred_labels = np.loadtxt(pred_path + pred_name + '_Zmax-labels.txt').astype(int)
 
 model = keras.models.load_model('model.hdf5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
 model.summary()
@@ -49,6 +48,28 @@ new_path = path + '\\source_data\\DREAM4'
 GSpath = new_path + '\\size' + str(size) + '\\DREAM4goldstandards\\' + name + '_goldstandard.tsv'
 GSdata = loadGSdata(GSpath, size)
 
-predicted_labels = model.predict_classes(pred_dataset)
-predicted_labels = predicted_labels.reshape([100,100])
+predicted_labels = model.predict_proba(pred_dataset)
+predicted_labels_reshaped = predicted_labels.reshape([100,100])
+edges = []
+for i in range(size):
+    for j in range(size):
+        source_node = j+1
+        target_node = i+1
+        edges.append((source_node, target_node))
+        
+indices = []
+for i in range(100):
+    index = i*100 + i
+    indices.append(index)
+        
+edges = np.array(edges)
+unsorted_edges = np.hstack((edges, predicted_labels))
+unsorted_edges = np.delete(unsorted_edges,indices,axis=0)
+sorted_edges = unsorted_edges[np.argsort(unsorted_edges[:, 2])]
+save_list = []
+for i in range(len(sorted_edges)):
+    save_list.append(('G' + str(int(sorted_edges[i][0])), 'G' + str(int(sorted_edges[i][1])), sorted_edges[i][2]))
 print('Total predicted edges = ', str(predicted_labels.sum()))
+
+with open('sorted_edges_dream4.tsv', 'w') as file:
+    file.write('\n'.join('%s\t%s\t%.7f' % x for x in save_list))
