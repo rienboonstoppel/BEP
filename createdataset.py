@@ -38,24 +38,30 @@ def openFiles(size, number, source, path):
         name = '\\Yeast-' + str(number) 
         KOpath = new_path + source[2] + '\\' + name + '_knockouts.tsv'
         KDpath = new_path + source[2] + '\\' + name + '_knockdowns.tsv'
-        WTpath = new_path + source[2] + '\\' + name + '_wildtype.tsv'
+        # WTpath = new_path + source[2] + '\\' + name + '_wildtype.tsv'
         GSpath = new_path + 'goldstandard\\' + name + '_goldstandard.tsv'
     elif source[0] == 'DREAM':
         new_path = path + '\\source_data\\DREAM4'
         name = 'insilico_size' + str(size) + '_' + str(number)
         KOpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_knockouts.tsv'
         KDpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_knockdowns.tsv'
-        WTpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_wildtype.tsv'
+        # WTpath = new_path + '\\size' + str(size) + '\\DREAM4trainingdata\\' + name  + '\\' + name + '_wildtype.tsv'
         GSpath = new_path + '\\size' + str(size) + '\\DREAM4goldstandards\\' + name + '_goldstandard.tsv'
+    elif source[0] == 'RANDOM':
+        new_path = path + '\\source_data\\RANDOM'
+        name = '\\random_network_' + str(number) 
+        KOpath = new_path + name + '_knockouts.tsv'
+        KDpath = new_path + name + '_knockdowns.tsv'
+        GSpath = new_path + '\goldstandard\\' + name + '_goldstandard.tsv'
     
     KO = loadData(KOpath)
     KD = loadData(KDpath)
-    WT = loadData(WTpath)
+    # WT = loadData(WTpath)
     GS = loadGSdata(GSpath, size)
     
-    return KO, KD, WT, GS
+    return KO, KD, GS
 
-def dataPrep(KO, KD, WT, GS):
+def dataPrep(KO, KD, GS):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
     dataset = []
     logKO = (np.ma.log(KO)).filled(0)
@@ -68,7 +74,7 @@ def dataPrep(KO, KD, WT, GS):
     Zkd[Zkd_nan_index] = 0
     # PZko = 2 * (1 - stats.norm.cdf(Zko))
     # PZkd = 2 * (1 - stats.norm.cdf(Zkd))
-    Prod = np.maximum(Zko, Zkd)    # use mean or max 
+    Zmax = np.maximum(Zko, Zkd)    # use mean or max 
     # PD = np.zeros((size,size));
     # for i in range(size):
     #     for j in range(size):
@@ -81,16 +87,16 @@ def dataPrep(KO, KD, WT, GS):
 
     # set diagonal to zero
     for i in range(len(KO)):
-        Prod[i,i] = 0
+        Zmax[i,i] = 0
     
     for j in range(len(KO)):
         for i in range(len(KO)):
-            dataset.extend(Prod[:,i].tolist())
-            dataset.extend(Prod[i,:].tolist())
-            dataset.extend(Prod[:,j].tolist())
-            dataset.extend(Prod[j,:].tolist())
+            dataset.extend(Zmax[:,i].tolist())
+            dataset.extend(Zmax[i,:].tolist())
+            dataset.extend(Zmax[:,j].tolist())
+            dataset.extend(Zmax[j,:].tolist())
             
-    return dataset, KO, logKO, Zko, Prod
+    return dataset, KO#, logKO, Zko, Zmax
 
 def reshapeLabels(GS):
     '''create labels array from GS'''
@@ -109,15 +115,17 @@ def createDataset(size, number, amount, source, path, suffix):
             path = working directory
     '''
     if source[0] == 'DREAM':
-        savename = 'data\\' + source[0] + '_' + str(number) + '_' + str(size) + '_' + suffix
+        savename = 'data\\' + source[0] + '_' + str(number) + '_' + str(amount) + '_' + str(size) + '_' + suffix
     elif source[0] =='GNW':
         savename = 'data\\' + source[0] + '-' + source[1] + '-' + source[2] + '_' + str(amount) + '_' + str(size) + '_' + suffix
+    elif source[0] =='RANDOM':
+        savename = 'data\\' + source[0] + '_' + str(amount) + '_' + str(size) + '_' + suffix
     completeDataset = np.array([])
     allLabels = np.array([])
     for i in range(amount):
         start_time = time.time()
-        KO, KD, WT, GS = openFiles(size, number, source, path)
-        dataset, KO = dataPrep(KO, KD, WT, size)
+        KO, KD, GS = openFiles(size, number, source, path)
+        dataset, KO = dataPrep(KO, KD, size)
         labels, GS = reshapeLabels(GS)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
@@ -137,14 +145,14 @@ def createDataset(size, number, amount, source, path, suffix):
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
 size = 100
 number = 1
-amount = 1
-source = ('DREAM', 'greedy', 'nonoise')
+amount = 10
+source = ('RANDOM', 'greedy', 'nonoise')
 suffix = 'Zmax'
 
-# output = createDataset(size, number, amount, source, path, suffix)
+output = createDataset(size, number, amount, source, path, suffix)
 
-KO, KD, WT, GS = openFiles(size, number, source, path)
-output = dataPrep(KO, KD, WT, size) # dataset, KO, logKO, Zko, Prod 
+# KO, KD, GS = openFiles(size, number, source, path)
+# output = dataPrep(KO, KD, size) # dataset, KO, logKO, Zko, Prod 
 
 # GS = output[2]
 # allLabels = np. reshape(allLabels, (10000,3))

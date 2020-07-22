@@ -32,15 +32,19 @@ def loadGSdata(file,size):
     
     return GSreshaped
 
-pred_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
-pred_name = 'DREAM_1_100'
+pred_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\\'
+pred_name = 'DREAM_5_1_100'
 pred_dataset = np.loadtxt(pred_path + pred_name + '_Zmax-data.txt')
 pred_labels = np.loadtxt(pred_path + pred_name + '_Zmax-labels.txt').astype(int)
 
-model = keras.models.load_model('model.hdf5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
+model_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\saved_models\predictions\\'
+model_name = 'fold-2.hdf5'
+model = keras.models.load_model(model_path+model_name, custom_objects = {'get_f1': get_f1}) # tensorflow 2.x necessary 
+# model = keras.models.load_model('model.hdf5',custom_objects={'get_f1':get_f1}) # tensorflow 2.x necessary 
+
 model.summary()
 
-path = r'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP'
+path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
 size = 100
 number = 1
 name = 'insilico_size' + str(size) + '_' + str(number)
@@ -58,8 +62,8 @@ for i in range(size):
         edges.append((source_node, target_node))
         
 indices = []
-for i in range(100):
-    index = i*100 + i
+for i in range(size):
+    index = i*size + i
     indices.append(index)
         
 edges = np.array(edges)
@@ -71,5 +75,5 @@ for i in range(len(sorted_edges)):
     save_list.append(('G' + str(int(sorted_edges[i][0])), 'G' + str(int(sorted_edges[i][1])), sorted_edges[i][2]))
 print('Total predicted edges = ', str(predicted_labels.sum()))
 
-with open('sorted_edges_dream4.tsv', 'w') as file:
+with open('sorted_edges_dream5.tsv', 'w') as file:
     file.write('\n'.join('%s\t%s\t%.7f' % x for x in save_list))

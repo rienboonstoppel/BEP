@@ -5,6 +5,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow.keras.backend as K
 from sklearn.model_selection import StratifiedKFold
+import os
 
 def get_f1(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
@@ -24,12 +25,17 @@ def loadData(path, name):
     return dataset, labels
 
 
-path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\data\\'
+path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\\'
 train_name = 'GNW-greedy-nonoise_10_100_Zmax'
-test_name = 'DREAM_1_100_Zmax'
+test_name = 'DREAM_1_1_100_Zmax'
 
-training = loadData(path, train_name)
-testing = loadData(path, test_name)
+folder_name = time.strftime("%Y-%m-%d_%H-%M")
+newpath = path + 'saved_models\\' + folder_name
+if not os.path.exists(newpath):
+    os.makedirs(newpath)
+
+training = loadData(path+'data\\', train_name)
+testing = loadData(path+'data\\', test_name)
 
 neg, pos = np.bincount(training[1])
 ratio = neg/pos
@@ -37,12 +43,10 @@ ratio = neg/pos
 f1_per_fold = []
 loss_per_fold = []
 
-save_dir = '\\saved_models\\' 
+save_dir = '\saved_models\\' 
 fold_no = 1
 seed = 10
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
-
-model_save_path = 'C:\\Users\\Rien\\CloudDiensten\\Stack\\Documenten\\Python Scripts\\BEP\\saved_models\\'
 
 for train_index, val_index in skf.split(training[0], training[1]):
     
@@ -72,9 +76,8 @@ for train_index, val_index in skf.split(training[0], training[1]):
     )
     
     # Create Callbacks
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = model_save_path + 'fold' + str(fold_no) + '-{epoch:02d}-{val_loss:.2f}.hdf5',
-                                                  monitor='get_f1', 
-                                                  verbose=0, save_best_only=True, mode='max')
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath = newpath + '/fold' + str(fold_no) + '-{epoch:02d}-{val_loss:.2f}.hdf5',
+                                                    monitor='get_f1', verbose=0, save_best_only=True, mode='max', save_weights_only=False)
     callbacks_list = [checkpoint]
  	# There can be other callbacks, but just showing one because it involves the model name
  	# This saves the best model
@@ -91,6 +94,8 @@ for train_index, val_index in skf.split(training[0], training[1]):
     scores = model.evaluate(testing[0], testing[1], verbose=2)
     # print("Test loss:", test_scores[0])
     # print("Test accuracy:", test_scores[1])
+    
+    model.save(newpath + r'\fold-' + str(fold_no) + '.hdf5') 
 
     print(f'Score for fold {fold_no}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1]*100}%')
     f1_per_fold.append(scores[1] * 100)
