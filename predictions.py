@@ -46,7 +46,7 @@ model.summary()
 
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
 size = 100
-number = 1
+number = 5
 name = 'insilico_size' + str(size) + '_' + str(number)
 new_path = path + '\\source_data\\DREAM4'
 GSpath = new_path + '\\size' + str(size) + '\\DREAM4goldstandards\\' + name + '_goldstandard.tsv'
@@ -70,9 +70,10 @@ edges = np.array(edges)
 unsorted_edges = np.hstack((edges, predicted_labels))
 unsorted_edges = np.delete(unsorted_edges,indices,axis=0)
 sorted_edges = unsorted_edges[np.argsort(unsorted_edges[:, 2])]
+sorted_edges_desc = np.flip(sorted_edges,axis=0)
 save_list = []
-for i in range(len(sorted_edges)):
-    save_list.append(('G' + str(int(sorted_edges[i][0])), 'G' + str(int(sorted_edges[i][1])), sorted_edges[i][2]))
+for i in range(len(sorted_edges_desc)):
+    save_list.append(('G' + str(int(sorted_edges_desc[i][0])), 'G' + str(int(sorted_edges_desc[i][1])), sorted_edges_desc[i][2]))
 print('Total predicted edges = ', str(predicted_labels.sum()))
 
 with open('sorted_edges_dream5.tsv', 'w') as file:
