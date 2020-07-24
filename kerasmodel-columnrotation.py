@@ -26,8 +26,8 @@ def loadData(path, name):
 
 
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\\'
-train_name = 'GNW-greedy-nonoise_10_100_logKO'
-test_name = 'DREAM_1_1_100_logKO'
+train_name = 'GNW-greedy-nonoise_10_100_KO'
+test_name = 'DREAM_1_1_100_KO'
 
 folder_name = time.strftime("%Y-%m-%d_%H-%M")
 newpath = path + 'saved_models\\' + folder_name
@@ -56,9 +56,9 @@ for train_index, val_index in skf.split(training[0], training[1]):
     # Define Sequential model with 3 layers
     model = keras.Sequential(
         [
-            layers.Dense(64, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
-            layers.Dense(32, activation="relu", name="layer2"),
-            layers.Dense(1, activation="sigmoid", name="layer3"),
+            layers.Dense(32, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
+            layers.Dense(16, activation="relu", name="layer2"),
+            layers.Dense(1, activation="softmax", name="layer3"),
         ]
     )
     
@@ -84,7 +84,7 @@ for train_index, val_index in skf.split(training[0], training[1]):
 
     history = model.fit(training[0][train_index], 
                         training[1][train_index], 
-                        batch_size = 64, 
+                        batch_size = 128, 
                         epochs = 50, 
                         class_weight = class_weight, 
                         validation_data = (training[0][val_index], training[1][val_index]),

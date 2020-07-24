@@ -61,7 +61,7 @@ def openFiles(size, number, source, path):
     
     return KO, KD, WT, GS
 
-def dataPrep(KO, KD, WT, GS):
+def dataPrep(KO, KD, WT, GS, preprocessing):
     ''' create dataset of one experiment containing for every row in dataset row of gene i, column of gene i, row of gene j, column of gene j, wildtype i and wildtype j'''
     dataset = []
     # set diagonal to WT
@@ -77,38 +77,45 @@ def dataPrep(KO, KD, WT, GS):
     Zkd[Zkd_nan_index] = 0
     Zmax = np.maximum(Zko, Zkd)    # use mean or max 
 
+    # rotate the complete matrix in order to train on the first column every time
     for j in range(len(KO)):
-        Zmaxrot = np.roll(Zmax, -j, axis = 0)
+        if preprocessing == 'KO':
+            rotated = np.roll(KO, -j, axis = 0)
+        elif preprocessing == 'logKO':
+            rotated = np.roll(logKO, -j, axis = 0)
+        elif preprocessing == 'Zmax':
+            rotated = np.roll(Zmax, -j, axis = 0)
         for i in range(len(KO)):
-            dataset.extend(Zmaxrot[:,i].tolist())
+            dataset.extend(rotated[:,i].tolist())
             
-    return dataset, KO#, logKO, Zko, Zmax
+    return dataset, KO, rotated#, logKO, Zko, Zmax
 
 def reshapeLabels(GS, size):
     '''create labels array from GS'''
     labels = np.reshape(GS,[size*size,1])
     return labels, GS
 
-def createDataset(size, number, amount, source, path, suffix):
+def createDataset(size, number, amount, source, path, preprocessing):
     '''create dataset based on variables:
             size = dimensions of the network
             number = number of the network, when multiple networks are used, this is the starting number
             amount = amount of networks to be added in dataset
             source = GNW or DREAM
             path = working directory
+            preprocessing = raw data, logarithmic data or Z stats
     '''
     if source[0] == 'DREAM':
-        savename = 'data\\' + source[0] + '_' + str(number) + '_' + str(amount) + '_' + str(size) + '_' + suffix
+        savename = 'data\\' + source[0] + '_' + str(number) + '_' + str(amount) + '_' + str(size) + '_' + preprocessing
     elif source[0] =='GNW':
-        savename = 'data\\' + source[0] + '-' + source[1] + '-' + source[2] + '_' + str(amount) + '_' + str(size) + '_' + suffix
+        savename = 'data\\' + source[0] + '-' + source[1] + '-' + source[2] + '_' + str(amount) + '_' + str(size) + '_' + preprocessing
     elif source[0] =='RANDOM':
-        savename = 'data\\' + source[0] + '_' + str(amount) + '_' + str(size) + '_' + suffix
+        savename = 'data\\' + source[0] + '_' + str(amount) + '_' + str(size) + '_' + preprocessing
     completeDataset = np.array([])
     allLabels = np.array([])
     for i in range(amount):
         start_time = time.time()
         KO, KD, WT, GS = openFiles(size, number, source, path)
-        dataset, KO = dataPrep(KO, KD, WT, GS)
+        dataset, KO = dataPrep(KO, KD, WT, GS, preprocessing)
         labels, GS = reshapeLabels(GS, size)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
@@ -130,13 +137,23 @@ def create_all():
     size = 100
     source_dream = ('DREAM', '~', '~')
     source_gnw = ('GNW', 'greedy', 'nonoise')
-    suffix = 'logKO'
+    preprocessing = 'KO' #KO, logKO, Zmax
     # dreamfiles
     for i in range(5):
         amount = 1
         number = i+1
-        createDataset(size, number, amount, source_dream, path, suffix)
+        createDataset(size, number, amount, source_dream, path, preprocessing)
     # GNW files
-    createDataset(size, 1, 10, source_gnw, path, suffix)
+    createDataset(size, 1, 10, source_gnw, path, preprocessing)
     
 create_all()
+# preprocessing = 'KO'
+
+# size = 10
+# source = ('DREAM', '~', '~')
+# number = 1
+# path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
+# KO, KD, WT, y = openFiles(size, number, source, path)
+# dataset, x, rotated = dataPrep(KO, KD, WT, GS, preprocessing)
+# rotated = np.roll(KO, -1, axis = 0)
+# labels, GS = reshapeLabels(GS, size)

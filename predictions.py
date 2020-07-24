@@ -9,14 +9,18 @@ def get_f1(y_true, y_pred):
     precision = true_positives / (predicted_positives + K.epsilon())
     recall = true_positives / (possible_positives + K.epsilon())
     f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
+    
     return f1_val
 
-def loadData(data_newpath, labels_newpath, model_newpath):
+def loadData(data_newpath, labels_newpath):
     dataset = np.loadtxt(data_newpath)
     labels = np.loadtxt(labels_newpath).astype(int)
+    return dataset, labels
+
+def loadModel(model_newpath):
     model = keras.models.load_model(model_newpath, custom_objects = {'get_f1': get_f1}) # tensorflow 2.x necessary 
     model.summary()
-    return dataset, labels, model
+    return model
 
 def prepareEdgelist(size):
     edges = []
@@ -33,9 +37,8 @@ def prepareEdgelist(size):
         selfloops.append(index)
     return edges, selfloops
 
-def rankedEdgelist(model, dataset):
-    predicted_proba = model.predict_proba(dataset)
-    # predicted_proba = predicted_proba.reshape([100,100])
+def rankedEdgelist(size, model, dataset):
+    predicted_proba = model.predict(dataset)
 
     edges, selfloops = prepareEdgelist(size)
                 
@@ -52,20 +55,23 @@ def saveEdgelist(edgelist, save_name):
     with open(save_name, 'w') as file:
         file.write('\n'.join('%s\t%s\t%.7f' % x for x in edgelist))
 
+def generateEdgelists(amount, model_name, size):
+    size = 100
+    preprocessing = 'KO'
+    model_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\saved_models\prediction_model\\'
+    model_newpath = model_path + model_name
+    model = loadModel(model_newpath)
+
+    path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\\'
+    for i in range(amount):
+        data_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-data.txt'
+        labels_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-labels.txt'
+        dataset, labels = loadData(data_path, labels_path)
+        savename = 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-rankededgelist.tsv'
+        ranked_edgelist = rankedEdgelist(size, model, dataset)
+        saveEdgelist(ranked_edgelist, savename)
+
+model_name ='fold-1.hdf5'
+amount = 5
 size = 100
-path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\\'
-data_name = 'DREAM_1_1_100'
-model_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\saved_models\predictions\\'
-model_name ='fold-5.hdf5'
-data_newpath = path + data_name + '_Zmax-data.txt'
-labels_newpath = path + data_name + '_Zmax-labels.txt'
-model_newpath = model_path + model_name
-    
-dataset, labels, model = loadData(data_newpath, labels_newpath, model_newpath)
-
-model.summary()
-
-savename = data_name + '_rankededgelist.tsv'
-ranked_edgelist = rankedEdgelist(model,dataset)
-ranked_edgelist = rankedEdgelist(model,dataset)
-saveEdgelist(ranked_edgelist, savename)
+generateEdgelists(amount, model_name, size)
