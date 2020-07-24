@@ -75,18 +75,7 @@ def dataPrep(KO, KD, WT, GS):
     Zkd_nan_index = np.isnan(Zkd)
     Zko[Zko_nan_index] = 0
     Zkd[Zkd_nan_index] = 0
-    # PZko = 2 * (1 - stats.norm.cdf(Zko))
-    # PZkd = 2 * (1 - stats.norm.cdf(Zkd))
     Zmax = np.maximum(Zko, Zkd)    # use mean or max 
-    # PD = np.zeros((size,size));
-    # for i in range(size):
-    #     for j in range(size):
-    #         if Prod[i,j] > 0:
-    #             # CDF of product of two random variables uniformly distributed on the unit interval [0, 1]
-    #             PD[i,j] = Prod[i,j] * (1 - np.log(Prod[i,j])); 
-    #         else:
-    #             # % log(0) = inf
-    #             PD[i,j] = 0;
 
     for j in range(len(KO)):
         Zmaxrot = np.roll(Zmax, -j, axis = 0)
@@ -95,7 +84,7 @@ def dataPrep(KO, KD, WT, GS):
             
     return dataset, KO#, logKO, Zko, Zmax
 
-def reshapeLabels(GS):
+def reshapeLabels(GS, size):
     '''create labels array from GS'''
     labels = np.reshape(GS,[size*size,1])
     return labels, GS
@@ -120,7 +109,7 @@ def createDataset(size, number, amount, source, path, suffix):
         start_time = time.time()
         KO, KD, WT, GS = openFiles(size, number, source, path)
         dataset, KO = dataPrep(KO, KD, WT, GS)
-        labels, GS = reshapeLabels(GS)
+        labels, GS = reshapeLabels(GS, size)
         completeDataset = np.append(completeDataset,dataset)
         allLabels = np.append(allLabels,labels)
         print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
@@ -136,18 +125,18 @@ def createDataset(size, number, amount, source, path, suffix):
 
     return completeDataset, allLabels, GS, KO
 
-path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
-size = 100
-number = 5
-amount = 1
-source = ('DREAM', 'greedy', 'nonoise')
-suffix = 'Zmax'
-
-output = createDataset(size, number, amount, source, path, suffix)
-
-# output = openFiles(size, number, source, path) #KO, KD, WT, GS
-# X = np.reshape(output[3],[10000,1])
-# output = dataPrep(KO, KD, size) # dataset, KO, logKO, Zko, Prod 
-
-# GS = output[2]
-# allLabels = np. reshape(allLabels, (10000,3))
+def create_all():
+    path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
+    size = 100
+    source_dream = ('DREAM', '~', '~')
+    source_gnw = ('GNW', 'greedy', 'nonoise')
+    suffix = 'logKO'
+    # dreamfiles
+    for i in range(5):
+        amount = 1
+        number = i+1
+        createDataset(size, number, amount, source_dream, path, suffix)
+    # GNW files
+    createDataset(size, 1, 10, source_gnw, path, suffix)
+    
+create_all()

@@ -26,8 +26,8 @@ def loadData(path, name):
 
 
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\\'
-train_name = 'GNW-greedy-nonoise_10_100_Zmax'
-test_name = 'DREAM_1_1_100_Zmax'
+train_name = 'GNW-greedy-nonoise_10_100_logKO'
+test_name = 'DREAM_1_1_100_logKO'
 
 folder_name = time.strftime("%Y-%m-%d_%H-%M")
 newpath = path + 'saved_models\\' + folder_name
