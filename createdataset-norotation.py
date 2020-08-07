@@ -79,14 +79,22 @@ def dataPrep(KO, KD, WT, GS, preprocessing):
 
     # rotate the complete matrix in order to train on the first column every time
     for j in range(len(KO)):
-        if preprocessing == 'KO':
-            rotated = np.roll(KO, -j, axis = 0)
-        elif preprocessing == 'logKO':
-            rotated = np.roll(logKO, -j, axis = 0)
-        elif preprocessing == 'Zmax':
-            rotated = np.roll(Zmax, -j, axis = 0)
         for i in range(len(KO)):
-            dataset.extend(rotated[:,i].tolist())
+            if preprocessing == 'KO':
+                dataset.extend(KO[:,i].tolist())
+                dataset.extend(KO[i,:].tolist())
+                dataset.extend(KO[:,j].tolist())
+                dataset.extend(KO[j,:].tolist())
+            elif preprocessing == 'logKO':
+                dataset.extend(logKO[:,i].tolist())
+                dataset.extend(logKO[i,:].tolist())
+                dataset.extend(logKO[:,j].tolist())
+                dataset.extend(logKO[j,:].tolist())
+            elif preprocessing == 'Zmax':
+                dataset.extend(Zmax[:,i].tolist())
+                dataset.extend(Zmax[i,:].tolist())
+                dataset.extend(Zmax[:,j].tolist())
+                dataset.extend(Zmax[j,:].tolist())
             
     return dataset, KO #, rotated, logKO, Zko, Zmax
 
@@ -122,7 +130,7 @@ def createDataset(size, number, amount, source, path, preprocessing):
         print('Loading network ' + str(number) + ' took %s seconds' % (time.time() - start_time))
         number += 1
 
-    columns = 1 * size # + 2
+    columns = 4 * size # + 2
     rows = amount * size * size
     completeDataset = completeDataset.reshape([rows,columns])
     start_time = time.time()
@@ -137,7 +145,7 @@ def create_all():
     size = 100
     source_dream = ('DREAM', '~', '~')
     source_gnw = ('GNW', 'greedy', 'nonoise')
-    preprocessing = 'KO' #KO, logKO, Zmax
+    preprocessing = 'Zmax' #KO, logKO, Zmax
     # dreamfiles
     for i in range(5):
         amount = 1
@@ -147,3 +155,13 @@ def create_all():
     createDataset(size, 1, 10, source_gnw, path, preprocessing)
     
 create_all()
+# preprocessing = 'KO'
+
+# size = 10
+# source = ('DREAM', '~', '~')
+# number = 1
+# path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
+# KO, KD, WT, y = openFiles(size, number, source, path)
+# dataset, x, rotated = dataPrep(KO, KD, WT, GS, preprocessing)
+# rotated = np.roll(KO, -1, axis = 0)
+# labels, GS = reshapeLabels(GS, size)

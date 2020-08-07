@@ -62,7 +62,7 @@ def generateEdgelists(amount, model_name, size):
     model_newpath = model_path + model_name
     model = loadModel(model_newpath)
 
-    path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\\'
+    path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\norotation\\'
     for i in range(amount):
         data_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-data.txt'
         labels_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-labels.txt'

@@ -24,10 +24,9 @@ def loadData(path, name):
     print('... took %s seconds' % (time.time() - start_time))
     return dataset, labels
 
-
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\\'
-train_name = 'GNW-greedy-nonoise_10_100_Zmax'
-test_name = 'DREAM_1_1_100_Zmax'
+train_name = 'GNW-greedy-nonoise_10_100_KO'
+test_name = 'DREAM_1_1_100_KO'
 
 folder_name = time.strftime("%Y-%m-%d_%H-%M")
 newpath = path + 'saved_models\\' + folder_name
@@ -56,8 +55,8 @@ for train_index, val_index in skf.split(training[0], training[1]):
     # Define Sequential model with 3 layers
     model = keras.Sequential(
         [
-            layers.Dense(64, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
-            layers.Dense(32, activation="relu", name="layer2"),
+            layers.Dense(128, input_shape = (len(training[0][0]), ), activation="relu", name="layer1"),
+            layers.Dense(64, activation="relu", name="layer2"),
             layers.Dense(1, activation="sigmoid", name="layer3"),
         ]
     )
@@ -71,7 +70,7 @@ for train_index, val_index in skf.split(training[0], training[1]):
         loss = keras.losses.BinaryCrossentropy(
             from_logits=True, label_smoothing=0, reduction="auto", name="binary_crossentropy"
             ),
-        optimizer = keras.optimizers.Adam(learning_rate=0.001),
+        optimizer = keras.optimizers.Adam(learning_rate=0.00001),
         metrics = [get_f1],
     )
     
@@ -84,8 +83,8 @@ for train_index, val_index in skf.split(training[0], training[1]):
 
     history = model.fit(training[0][train_index], 
                         training[1][train_index], 
-                        batch_size = 64, 
-                        epochs = 25, 
+                        batch_size = 256, 
+                        epochs = 100, 
                         class_weight = class_weight, 
                         validation_data = (training[0][val_index], training[1][val_index]),
                         callbacks = callbacks_list,
