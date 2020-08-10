@@ -7,15 +7,6 @@ import tensorflow.keras.backend as K
 from sklearn.model_selection import StratifiedKFold
 import os
 
-def get_f1(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    recall = true_positives / (possible_positives + K.epsilon())
-    f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
-    return f1_val
-
 def loadData(path, name):
     print('Loading dataset ' + name + '...')
     start_time = time.time()
@@ -24,29 +15,47 @@ def loadData(path, name):
     print('... took %s seconds' % (time.time() - start_time))
     return dataset, labels
 
+def get_f1(y_true, y_pred):
+    '''custom metric for keras'''
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    recall = true_positives / (possible_positives + K.epsilon())
+    f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
+    return f1_val
+
+def create_outputfolder(path):
+    folder_name = time.strftime("%Y-%m-%d_%H-%M")
+    newpath = path + 'saved_models\\' + folder_name
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    return newpath
+
+# variables
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\\'
 train_name = 'GNW-greedy-nonoise_10_100_KO'
 test_name = 'DREAM_1_1_100_KO'
 
-folder_name = time.strftime("%Y-%m-%d_%H-%M")
-newpath = path + 'saved_models\\' + folder_name
-if not os.path.exists(newpath):
-    os.makedirs(newpath)
+# create path to save checkpoints and models to
+newpath = create_outputfolder(path)
 
+# load the necessary data
 training = loadData(path+'data\\', train_name)
 testing = loadData(path+'data\\', test_name)
 
+# prepare some variables for the training
 neg, pos = np.bincount(training[1])
-ratio = neg/pos
+ratio = neg/pos # change this to change the class weight. this automatic calculation will result in a class weight of around 50 for class 1
 
 f1_per_fold = []
 loss_per_fold = []
 
-save_dir = '\saved_models\\' 
 fold_no = 1
-seed = 10
+seed = 10 # random number to generate reproducable results for the data split
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
+# the neural network
 for train_index, val_index in skf.split(training[0], training[1]):
     
     print('Fold: ' + str(fold_no))

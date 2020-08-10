@@ -1,28 +1,32 @@
 from tensorflow import keras
 import numpy as np
 import tensorflow.keras.backend as K
+import os
 
 def get_f1(y_true, y_pred):
+    '''custom metric for keras'''
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
     precision = true_positives / (predicted_positives + K.epsilon())
     recall = true_positives / (possible_positives + K.epsilon())
     f1_val = 2*(precision*recall)/(precision+recall+K.epsilon())
-    
     return f1_val
 
-def loadData(data_newpath, labels_newpath):
-    dataset = np.loadtxt(data_newpath)
-    labels = np.loadtxt(labels_newpath).astype(int)
+def loadData(data_path, labels_path):
+    '''load the data to be predicted'''
+    dataset = np.loadtxt(data_path)
+    labels = np.loadtxt(labels_path).astype(int)
     return dataset, labels
 
-def loadModel(model_newpath):
-    model = keras.models.load_model(model_newpath, custom_objects = {'get_f1': get_f1}) # tensorflow 2.x necessary 
+def loadModel(model_path):
+    '''load the model to be predicted by'''
+    model = keras.models.load_model(model_path, custom_objects = {'get_f1': get_f1}) # tensorflow 2.x necessary 
     model.summary()
     return model
 
 def prepareEdgelist(size):
+    ''' prepare a list of all possible edges, including a list of indices for selfloops in order to delete them later on'''
     edges = []
     for i in range(size):
         for j in range(size):
@@ -38,6 +42,7 @@ def prepareEdgelist(size):
     return edges, selfloops
 
 def rankedEdgelist(size, model, dataset):
+    '''predict the probabilites of all possible edges and list them, and sort that list'''
     predicted_proba = model.predict(dataset)
 
     edges, selfloops = prepareEdgelist(size)
@@ -51,27 +56,37 @@ def rankedEdgelist(size, model, dataset):
         ranked_edgelist.append(('G' + str(int(sorted_edges_desc[i][0])), 'G' + str(int(sorted_edges_desc[i][1])), sorted_edges_desc[i][2]))
     return ranked_edgelist
 
-def saveEdgelist(edgelist, save_name):
-    with open(save_name, 'w') as file:
-        file.write('\n'.join('%s\t%s\t%.7f' % x for x in edgelist))
+def saveEdgelist(path, edgelist, save_name):
+    newpath = path + r'\ranked_edgelists'
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    
+    save_path = newpath + '\\' + save_name
+    with open(save_path, 'w') as file:
+        file.write('\n'.join('%s\t%s\t%.10f' % x for x in edgelist))
 
-def generateEdgelists(amount, model_name, size):
-    size = 100
-    preprocessing = 'KO'
-    model_path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\saved_models\prediction_model\\'
-    model_newpath = model_path + model_name
-    model = loadModel(model_newpath)
+def generateEdgelists(path, preprocessing, amount, model_name, size):
+    '''
+    generate a ranked edgelist of a GRN of choice
+    data is located in the usual folder
+    all possible models and checkpoints are saved in ...\saved_model\(folder with date-time)
+        in order to use a model for prediction here, the model of your choice should be moved to a folder named 'prediction_model' inside 'saved_models which should be made manually the first time'
+    '''
+    prediction_modelpath = path + r'\saved_models\prediction_model\\'
+    model = loadModel(prediction_modelpath + model_name)
 
-    path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP\data\norotation\\'
     for i in range(amount):
-        data_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-data.txt'
-        labels_path = path + 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-labels.txt'
+        data_path = path + '\data\\DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-data.txt'
+        labels_path = path + '\data\\DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-labels.txt'
         dataset, labels = loadData(data_path, labels_path)
-        savename = 'DREAM_' + str(i+1) + '_1_' + str(size) + '_' + preprocessing + '-rankededgelist.tsv'
+        savename = 'DREAM_' + str(i+1) + '_' + preprocessing + '-rankededgelist.tsv'
         ranked_edgelist = rankedEdgelist(size, model, dataset)
-        saveEdgelist(ranked_edgelist, savename)
+        saveEdgelist(path, ranked_edgelist, savename)
 
+preprocessing = 'KO'
+path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
 model_name ='fold-1.hdf5'
 amount = 5
 size = 100
-generateEdgelists(amount, model_name, size)
+
+generateEdgelists(path, preprocessing, amount, model_name, size)
