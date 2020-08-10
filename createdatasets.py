@@ -164,7 +164,7 @@ def create_all():
     size = 100
     source_dream = ('DREAM', '~', '~')
     source_gnw = ('GNW', 'greedy', 'nonoise')
-    preprocessing = 'KO' #KO, Zmax
+    preprocessing = 'Zmax' #KO, Zmax
     rotation = True
     # DREAM files
     for i in range(5):
