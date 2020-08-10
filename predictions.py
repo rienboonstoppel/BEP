@@ -85,7 +85,7 @@ def generateEdgelists(path, preprocessing, amount, model_name, size):
 
 preprocessing = 'KO'
 path = r'C:\Users\Rien\CloudDiensten\Stack\Documenten\Python Scripts\BEP'
-model_name ='fold-1.hdf5'
+model_name ='fold-5.hdf5'
 amount = 5
 size = 100
 
